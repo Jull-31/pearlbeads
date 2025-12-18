@@ -147,7 +147,7 @@
     }
 
     function startAutoSlide() {
-        autoSlideInterval = setInterval(nextSlide, 5000); // Auto slide every 5 seconds
+        autoSlideInterval = setInterval(nextSlide, 3000); // Auto slide every 3 seconds
     }
 
     function stopAutoSlide() {
@@ -269,7 +269,7 @@
         SEE ALL PRODUCTS
     </a>
     @endif
-</div>
+</div>  
 
         <!-- Phone Strap Products -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
