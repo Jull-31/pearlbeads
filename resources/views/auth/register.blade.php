@@ -35,7 +35,7 @@
                     <div class="mb-6">
                         <img src="https://img.icons8.com/clouds/200/000000/add-user-male.png" alt="Sign Up" class="w-48 h-48 mx-auto">
                     </div>
-                    <h2 class="text-4xl font-bold text-gray-800 mb-2">CREATE ACCOUNT</h2>
+                    <h2 class="text-4xl font-bold text-gray-800 mb-2">BUAT AKUN</h2>
                     <p class="text-gray-600">BUAT AKUN DAN DAPATKAN MANFAAT KEMUDAHAN BERBELANJA ANDA</p>
                 </div>
 
@@ -57,21 +57,21 @@
                     <!-- Name -->
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
+                            Nama *
                         </label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required
                             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="John Doe">
+                            placeholder="Pearl Beads">
                     </div>
 
                     <!-- Email -->
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
+                            Alamat Email *
                         </label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}" required
                             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="your@email.com">
+                            placeholder="pearlbeads@gmail.com">
                     </div>
 
                     <!-- Password -->
@@ -87,7 +87,7 @@
                     <!-- Confirm Password -->
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
-                            Confirm Password *
+                            Konfirmasi Password *
                         </label>
                         <input type="password" name="password_confirmation" id="password_confirmation" required
                             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -99,22 +99,22 @@
                         <input type="checkbox" id="terms" required
                             class="w-4 h-4 mt-1 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                         <label for="terms" class="ml-2 text-sm text-gray-600">
-                            I agree to the <a href="#" class="text-purple-600 hover:text-purple-800 font-semibold">Terms and Conditions</a> and <a href="#" class="text-purple-600 hover:text-purple-800 font-semibold">Privacy Policy</a>
+                            Saya setuju dengan <a href="#" class="text-purple-600 hover:text-purple-800 font-semibold">Syarat dan Ketentuan</a> serta <a href="#" class="text-purple-600 hover:text-purple-800 font-semibold">Kebijakan Privasi</a>
                         </label>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" 
                         class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-full font-semibold text-lg hover:from-purple-600 hover:to-pink-600 transition shadow-lg transform hover:scale-105">
-                        Create Account
+                        Buat Akun
                     </button>
                 </form>
 
                 <!-- Login Link -->
                 <div class="mt-8 text-center">
                     <p class="text-gray-600">
-                        Already have an account? 
-                        <a href="{{ route('login') }}" class="text-purple-600 font-semibold hover:text-purple-800">Login here</a>
+                        Sudah memiliki akun? 
+                        <a href="{{ route('login') }}" class="text-purple-600 font-semibold hover:text-purple-800">Login di sini</a>
                     </p>
                 </div>
             </div>

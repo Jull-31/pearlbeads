@@ -13,15 +13,15 @@ class AuthController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return Auth::user()->is_admin 
+            return Auth::user()->is_admin
                 ? redirect()->route('admin.dashboard')
                 : redirect()->route('home');
         }
-        
+
         return view('auth.login');
     }
 
-    // Proses login
+    // Proses login (UPDATED)
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -29,17 +29,18 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $remember = $request->has('remember');
-
-        if (Auth::attempt($credentials, $remember)) {
+        if (Auth::attempt($credentials, $request->has('remember'))) {
             $request->session()->regenerate();
 
+            // Redirect ke halaman sebelumnya jika ada
+            $redirectTo = $request->input('redirect', route('home'));
+
             if (Auth::user()->is_admin) {
-                return redirect()->intended(route('admin.dashboard'))
+                return redirect()->route('admin.dashboard')
                     ->with('success', 'Welcome back, Admin!');
             }
 
-            return redirect()->intended(route('home'))
+            return redirect($redirectTo)
                 ->with('success', 'Welcome back!');
         }
 
@@ -54,7 +55,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect()->route('home');
         }
-        
+
         return view('auth.register');
     }
 
@@ -84,6 +85,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
