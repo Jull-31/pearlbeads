@@ -1,306 +1,331 @@
-// Cart System - Pearlbeads.co
 class ShoppingCart {
     constructor() {
-        this.items = this.getCartFromStorage();
+        console.log('🛒 ShoppingCart initializing...');
+        this.items = JSON.parse(localStorage.getItem('pearlbeads_cart')) || [];
         this.init();
     }
 
     init() {
-        this.updateCartUI();
+        console.log('📦 Current items:', this.items);
+        this.updateUI();
         this.setupEventListeners();
     }
 
-    getCartFromStorage() {
-        const cart = localStorage.getItem('pearlbeads_cart');
-        return cart ? JSON.parse(cart) : [];
-    }
-
-    saveCartToStorage() {
-        localStorage.setItem('pearlbeads_cart', JSON.stringify(this.items));
-    }
-
-    addItem(product) {
-        const existingItem = this.items.find(item => item.id === product.id);
-        
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            this.items.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.image,
-                quantity: 1
-            });
-        }
-
-        this.saveCartToStorage();
-        this.updateCartUI();
-        this.showNotification('Product added to cart!');
-    }
-
-    removeItem(productId) {
-        this.items = this.items.filter(item => item.id !== productId);
-        this.saveCartToStorage();
-        this.updateCartUI();
-    }
-
-    updateQuantity(productId, quantity) {
-        const item = this.items.find(item => item.id === productId);
-        if (item) {
-            item.quantity = parseInt(quantity);
-            if (item.quantity <= 0) {
-                this.removeItem(productId);
+    setupEventListeners() {
+        // Pastikan event listener terpasang setelah DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkoutBtn = document.querySelector('button[onclick*="openOrderModal"]');
+            if (checkoutBtn) {
+                console.log('✅ Checkout button found');
+                // Tambah event listener langsung (backup dari onclick)
+                checkoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Checkout button clicked!');
+                    this.openOrderModal();
+                });
             } else {
-                this.saveCartToStorage();
-                this.updateCartUI();
+                console.warn('⚠️ Checkout button not found');
+            }
+        });
+    }
+
+    save() {
+        localStorage.setItem('pearlbeads_cart', JSON.stringify(this.items));
+        console.log('💾 Cart saved:', this.items);
+        this.updateUI();
+    }
+
+    // --- LOGIKA BARANG ---
+    addItem(product) {
+        console.log('➕ Adding item:', product);
+        const existing = this.items.find(item => item.id === product.id);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            this.items.push({ ...product, quantity: 1 });
+        }
+        this.save();
+        this.toggleCartSidebar(true);
+    }
+
+    removeItem(id) {
+        console.log('🗑️ Removing item:', id);
+        this.items = this.items.filter(item => item.id !== id);
+        this.save();
+    }
+
+    updateQuantity(id, qty) {
+        console.log('🔢 Update quantity:', id, qty);
+        const item = this.items.find(item => item.id === id);
+        if (item) {
+            item.quantity = parseInt(qty);
+            if (item.quantity <= 0) {
+                this.removeItem(id);
+            } else {
+                this.save();
             }
         }
-    }
-
-    clearCart() {
-        this.items = [];
-        this.saveCartToStorage();
-        this.updateCartUI();
     }
 
     getTotal() {
         return this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
 
-    getItemCount() {
-        return this.items.reduce((count, item) => count + item.quantity, 0);
-    }
-
-    updateCartUI() {
-        // Update cart badge
-        const cartBadge = document.getElementById('cartBadge');
-        const itemCount = this.getItemCount();
+    // --- LOGIKA TAMPILAN (UI) ---
+    updateUI() {
+        console.log('🎨 Updating UI...');
         
-        if (cartBadge) {
-            cartBadge.textContent = itemCount;
-            cartBadge.style.display = itemCount > 0 ? 'flex' : 'none';
+        // 1. Badge Angka (FIX: Pastikan badge muncul)
+        const badge = document.getElementById('cartBadge');
+        const count = this.items.reduce((acc, item) => acc + item.quantity, 0);
+        if (badge) {
+            badge.innerText = count;
+            badge.style.transform = count > 0 ? 'scale(1)' : 'scale(0)';
+            badge.style.display = count > 0 ? 'flex' : 'none';
+            console.log('🔴 Badge updated:', count);
         }
 
-        // Update cart sidebar
-        this.renderCartItems();
-        this.updateCartTotal();
-    }
-
-    renderCartItems() {
-        const cartItemsContainer = document.getElementById('cartItems');
-        
-        if (!cartItemsContainer) return;
-
-        if (this.items.length === 0) {
-            cartItemsContainer.innerHTML = `
-                <div class="text-center py-12">
-                    <svg class="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                    <p class="text-gray-500">Your cart is empty</p>
-                </div>
-            `;
-            return;
+        // 2. Total Harga (FIX: Format yang benar tanpa duplikasi)
+        const totalEl = document.getElementById('cartTotal');
+        if (totalEl) {
+            const formatted = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(this.getTotal());
+            totalEl.innerText = formatted;
+            console.log('💰 Total updated:', formatted);
         }
 
-        cartItemsContainer.innerHTML = this.items.map(item => `
-            <div class="flex items-center space-x-4 bg-white p-4 rounded-lg shadow-sm mb-3">
-                <img src="/images/products/${item.image}" 
-                     alt="${item.name}" 
-                     class="w-16 h-16 object-cover rounded"
-                     onerror="this.src='https://via.placeholder.com/100'">
-                
-                <div class="flex-1">
-                    <h4 class="font-semibold text-gray-800 text-sm">${item.name}</h4>
-                    <p class="text-purple-600 font-bold text-sm">Rp ${this.formatPrice(item.price)}</p>
-                    
-                    <div class="flex items-center space-x-2 mt-2">
-                        <button onclick="cart.updateQuantity(${item.id}, ${item.quantity - 1})" 
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 w-6 h-6 rounded flex items-center justify-center">
-                            <span class="text-lg">−</span>
-                        </button>
-                        <input type="number" 
-                               value="${item.quantity}" 
-                               min="1"
-                               onchange="cart.updateQuantity(${item.id}, this.value)"
-                               class="w-12 text-center border border-gray-300 rounded">
-                        <button onclick="cart.updateQuantity(${item.id}, ${item.quantity + 1})" 
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 w-6 h-6 rounded flex items-center justify-center">
-                            <span class="text-lg">+</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <button onclick="cart.removeItem(${item.id})" 
-                        class="text-red-500 hover:text-red-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                </button>
-            </div>
-        `).join('');
-    }
-
-    updateCartTotal() {
-        const totalElement = document.getElementById('cartTotal');
-        if (totalElement) {
-            totalElement.textContent = this.formatPrice(this.getTotal());
-        }
-    }
-
-    formatPrice(price) {
-        return new Intl.NumberFormat('id-ID').format(price);
-    }
-
-    // MODIFIKASI: Membuka Modal, bukan langsung ke WA
-    sendToWhatsApp() {
-        // Cek login (jika fitur ini ada)
-        if (window.AUTH && !window.AUTH.loggedIn) {
-            this.showLoginModal();
+        // 3. List Barang
+        const container = document.getElementById('cartItems');
+        if (!container) {
+            console.warn('⚠️ Cart container not found');
             return;
         }
 
         if (this.items.length === 0) {
-            alert('Your cart is empty!');
-            return;
-        }
-
-        // Tampilkan modal input nama & jadwal yang ada di layout
-        const modal = document.getElementById('orderModal');
-        if (modal) {
-            modal.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="text-center py-10 text-gray-400">
+                    <p class="text-4xl mb-2">🛒</p>
+                    <p class="font-bold">Keranjang kosong</p>
+                    <p class="text-sm">Yuk belanja dulu! 😊</p>
+                </div>`;
         } else {
-            console.error("Modal 'orderModal' tidak ditemukan di layout!");
-        }
-    }
-
-    // FUNGSI FINAL: Mengirim ke WhatsApp setelah input modal valid
-    confirmAndSendWA() {
-        const nameInput = document.getElementById('customerName');
-        const timeInput = document.getElementById('pickupTime');
-
-        if (!nameInput.value || !timeInput.value) {
-            alert('Mohon isi Nama dan Jadwal Pengambilan terlebih dahulu!');
-            return;
-        }
-
-        const phone = '6283836295352';
-        let message = `*🛍️ ORDER DARI PEARLBEADS.CO*\n\n`;
-        message += `👤 *Nama:* ${nameInput.value}\n`;
-        message += `⏰ *Jadwal Ambil:* ${new Date(timeInput.value).toLocaleString('id-ID')}\n`;
-        message += `━━━━━━━━━━━━━━━━━━\n\n`;
-        message += `*Detail Pesanan:*\n`;
-
-        this.items.forEach((item, index) => {
-            message += `${index + 1}. *${item.name}*\n`;
-            message += `   Harga: Rp ${this.formatPrice(item.price)}\n`;
-            message += `   Jumlah: ${item.quantity}\n`;
-            message += `   Subtotal: Rp ${this.formatPrice(item.price * item.quantity)}\n\n`;
-        });
-
-        message += '━━━━━━━━━━━━━━━━━━\n';
-        message += `*TOTAL: Rp ${this.formatPrice(this.getTotal())}*\n\n`;
-        message += '_Mohon konfirmasi pesanan ini. Terima kasih!_ 🙏';
-
-        window.open(
-            `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-            '_blank'
-        );
-
-        // Reset & Tutup
-        document.getElementById('orderModal').classList.add('hidden');
-        nameInput.value = '';
-        timeInput.value = '';
-        this.clearCart();
-    }
-
-    showLoginModal() {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-[110] flex items-center justify-center';
-        modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
-                <div class="text-center">
-                    <div class="mb-6">
-                        <svg class="w-20 h-20 mx-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                        </svg>
+            container.innerHTML = this.items.map(item => `
+                <div class="flex gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-3 relative hover:shadow-md transition">
+                    <img src="/images/products/${item.image}" 
+                         class="w-16 h-16 object-cover rounded-lg bg-gray-100" 
+                         onerror="this.src='https://via.placeholder.com/100?text=No+Image'"
+                         alt="${item.name}">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${item.name}</h4>
+                        <p class="text-purple-600 font-bold text-xs">
+                            ${new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0
+                            }).format(item.price)}
+                        </p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <button onclick="cart.updateQuantity(${item.id}, ${item.quantity - 1})" 
+                                    class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded text-sm font-bold transition">-</button>
+                            <span class="text-sm font-bold w-8 text-center">${item.quantity}</span>
+                            <button onclick="cart.updateQuantity(${item.id}, ${item.quantity + 1})" 
+                                    class="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded text-sm font-bold transition">+</button>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Login Required</h3>
-                    <p class="text-gray-600 mb-6">You need to login first to complete your order</p>
-                    <div class="flex space-x-3">
-                        <button onclick="this.closest('.fixed').remove()" 
-                                class="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">
-                            Cancel
-                        </button>
-                        <button onclick="window.location.href='/login'" 
-                                class="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition">
-                            Login Now
-                        </button>
-                    </div>
+                    <button onclick="cart.removeItem(${item.id})" 
+                            class="absolute top-3 right-3 text-red-400 hover:text-red-600 text-lg transition">
+                        🗑️
+                    </button>
                 </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
+            `).join('');
+        }
     }
 
-    toggleCartSidebar() {
+    // --- FITUR SIDEBAR & MODAL ---
+    toggleCartSidebar(forceOpen = false) {
         const sidebar = document.getElementById('cartSidebar');
         const overlay = document.getElementById('cartOverlay');
         
-        if (sidebar && overlay) {
-            const isOpen = sidebar.classList.contains('translate-x-0');
-            
-            if (isOpen) {
-                sidebar.classList.remove('translate-x-0');
-                sidebar.classList.add('translate-x-full');
-                overlay.classList.add('hidden');
-            } else {
-                sidebar.classList.remove('translate-x-full');
-                sidebar.classList.add('translate-x-0');
-                overlay.classList.remove('hidden');
+        if (!sidebar || !overlay) {
+            console.error('❌ Sidebar or overlay not found');
+            return;
+        }
+
+        const isOpen = !sidebar.classList.contains('translate-x-full');
+        
+        if (forceOpen || !isOpen) {
+            sidebar.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
+            console.log('📂 Cart opened');
+        } else {
+            sidebar.classList.add('translate-x-full');
+            overlay.classList.add('hidden');
+            console.log('📁 Cart closed');
+        }
+    }
+
+    openOrderModal() {
+        console.log('🚀 Opening order modal...');
+        console.log('📦 Items in cart:', this.items.length);
+        
+        if (this.items.length === 0) {
+            alert('Keranjang masih kosong! 🛒');
+            return;
+        }
+
+        // ==========================================
+        // CEK LOGIN (SATPAM) - INI YANG DITAMBAHKAN
+        // ==========================================
+        if (typeof window.isLoggedIn !== 'undefined' && !window.isLoggedIn) {
+            if(confirm('Ups! Kamu harus Login dulu untuk Checkout.\n\nMau login sekarang?')) {
+                window.location.href = '/login';
             }
+            return; // Stop, jangan lanjut buka modal
+        }
+
+        const modal = document.getElementById('orderModal');
+        if (!modal) {
+            console.error('❌ Modal element not found!');
+            alert('Error: Modal tidak ditemukan!');
+            return;
+        }
+
+        // Force display
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        console.log('✅ Modal opened successfully');
+        
+        // Set default pickup time (besok jam 10 pagi)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+        const pickupInput = document.getElementById('pickupTime');
+        if (pickupInput) {
+            pickupInput.value = tomorrow.toISOString().slice(0, 16);
         }
     }
 
-    setupEventListeners() {
-        const overlay = document.getElementById('cartOverlay');
-        if (overlay) {
-            overlay.addEventListener('click', () => this.toggleCartSidebar());
+    closeOrderModal() {
+        console.log('❌ Closing order modal...');
+        const modal = document.getElementById('orderModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            console.log('✅ Modal closed');
         }
     }
 
-    showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-down';
-        notification.innerHTML = `
-            <div class="flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span>${message}</span>
-            </div>
-        `;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
+    // --- CHECKOUT KE WA ---
+    async confirmAndSendWA() {
+        console.log('📤 Sending to WhatsApp...');
+        
+        const name = document.getElementById('customerName').value.trim();
+        const time = document.getElementById('pickupTime').value;
+
+        if (!name || !time) {
+            alert('Mohon isi Nama & Jadwal Pengambilan! ⚠️');
+            return;
+        }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            
+            if (!csrfToken) {
+                console.error('❌ CSRF token not found');
+                throw new Error('CSRF token tidak ditemukan');
+            }
+
+            console.log('📡 Sending checkout request...');
+            
+            const response = await fetch('/checkout', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    pickup_time: time,
+                    total: this.getTotal(),
+                    items: this.items
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Server response:', result);
+
+            if (result.status === 'success') {
+                const phone = '6285328171427';
+                let message = `*🛍️ ORDER BARU #${result.order_id}*\n\n`;
+                message += `👤 Nama: ${name}\n`;
+                message += `📅 Pickup: ${new Date(time).toLocaleString('id-ID', {
+                    dateStyle: 'full',
+                    timeStyle: 'short'
+                })}\n`;
+                message += `━━━━━━━━━━━━━━━━\n`;
+                
+                this.items.forEach((item, index) => {
+                    message += `${index + 1}. ${item.name} (${item.quantity}x) - Rp ${new Intl.NumberFormat('id-ID').format(item.price * item.quantity)}\n`;
+                });
+                
+                message += `━━━━━━━━━━━━━━━━\n`;
+                message += `*TOTAL: Rp ${new Intl.NumberFormat('id-ID').format(this.getTotal())}*\n\n`;
+                message += `Terima kasih sudah berbelanja di Pearlbeads! 💜`;
+
+                const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                console.log('📱 Opening WhatsApp...');
+                window.open(waUrl, '_blank');
+                
+                // Reset & reload
+                setTimeout(() => {
+                    this.items = [];
+                    this.save();
+                    this.closeOrderModal();
+                    window.location.reload();
+                }, 500);
+                
+            } else {
+                throw new Error(result.message || 'Checkout gagal');
+            }
+        } catch (error) {
+            console.error('❌ Checkout error:', error);
+            alert('Gagal melakukan checkout: ' + error.message);
+        }
     }
 }
 
-// Inisialisasi
-if (!window.location.pathname.startsWith('/admin')) {
-    window.cart = new ShoppingCart();
+// INISIALISASI GLOBAL
+console.log('🚀 Loading ShoppingCart...');
+
+function initCart() {
+    if (typeof window.cart === 'undefined') {
+        window.cart = new ShoppingCart();
+        console.log('✅ Cart initialized successfully');
+    }
 }
 
-// Global functions agar bisa dipanggil dari HTML onclick
-function sendToWhatsApp() {
-    window.cart.sendToWhatsApp();
+// Multiple initialization points untuk memastikan cart selalu ter-load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCart);
+} else {
+    initCart();
 }
 
-function confirmAndSendWA() {
-    window.cart.confirmAndSendWA();
-}
-
-function closeOrderModal() {
-    const modal = document.getElementById('orderModal');
-    if (modal) modal.classList.add('hidden');
-}
+// Backup initialization
+window.addEventListener('load', () => {
+    if (typeof window.cart === 'undefined') {
+        console.warn('⚠️ Cart not initialized, retrying...');
+        initCart();
+    }
+});

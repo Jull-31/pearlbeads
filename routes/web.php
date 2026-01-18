@@ -32,3 +32,15 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function() 
     // Categories Management
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
 });
+// Route untuk Checkout dari JS (Public)
+Route::post('/checkout', [App\Http\Controllers\OrderController::class, 'store'])->name('checkout.store');
+
+// Group Admin (Tambahkan di dalam middleware admin yang sudah ada)
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    // ... route dashboard, banner, product yang lama ...
+    
+    // Route Baru Order
+    Route::get('/orders', [App\Http\Controllers\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/history', [App\Http\Controllers\OrderController::class, 'history'])->name('orders.history');
+    Route::post('/orders/{id}/status', [App\Http\Controllers\OrderController::class, 'updateStatus'])->name('orders.status');
+});
